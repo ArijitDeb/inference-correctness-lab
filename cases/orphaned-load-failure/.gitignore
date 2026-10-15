@@ -1,5 +1,7 @@
 results/
+results-8b/
 storage/
+storage-8b/
 trees/
 __pycache__/
 .hypothesis/
