@@ -1,0 +1,6 @@
+results/
+storage/
+trees/
+__pycache__/
+.hypothesis/
+.pytest_cache/
