@@ -2,7 +2,7 @@
 
 **The bug.** A request's synchronous external KV load fails, and the request is aborted in the same engine step. `EngineCore.step` runs `schedule → execute_model → _process_aborts_queue → update_from_output` (`vllm/v1/engine/core.py:644-668` at `04462732`). So the abort frees the request *before* the load-failure report is processed. `Scheduler._handle_invalid_blocks` scans only `running` and `kv_holding_waiting`, finds nobody, and returns early (`if not total_failed_requests: return set()`) without evicting. The request's blocks were hashed into the prefix cache at schedule time, and freeing keeps the hash. A later identical prompt gets a prefix-cache hit on KV that was never written. This happens under the default `kv_load_failure_policy="fail"` as well as `recompute`, with sync and with async scheduling.
 
-**Results:** [RESULTS.md](RESULTS.md) (table, environment, commits). **Fix:** the commit measured here is `e23ecfa8` on branch [`orphaned-load-failure-04462732`](https://github.com/ArijitDeb/vllm/tree/orphaned-load-failure-04462732), on the same base as `main`. The PR branch [`orphaned-load-failure`](https://github.com/ArijitDeb/vllm/tree/orphaned-load-failure) carries the same patch rebased onto current upstream main. Both carry the CPU regression tests.
+**Results:** [RESULTS.md](RESULTS.md) (table, environment, commits); timing on an 8B model in [RESULTS-8B.md](RESULTS-8B.md). **Write-up:** [WRITEUP.md](WRITEUP.md). **Fix:** the commit measured here is `e23ecfa8` on branch [`orphaned-load-failure-04462732`](https://github.com/ArijitDeb/vllm/tree/orphaned-load-failure-04462732), on the same base as `main`. The PR branch [`orphaned-load-failure`](https://github.com/ArijitDeb/vllm/tree/orphaned-load-failure) carries the same patch rebased onto current upstream main. Both carry the CPU regression tests.
 
 **The name.** The worker's failure report arrives after its owner is gone: an orphaned report, so nothing cleans up after it.
 
@@ -110,5 +110,7 @@ Running a vLLM unit test with `PYTHONPATH=<another tree>` from inside the clone 
 | `setup_trees.sh`, `run_matrix.sh` | tree setup and the full matrix for one tree |
 | `tests/test_compare.py` | tests for the table logic, including that `compare.py` expects exactly the cells `run_matrix.sh` runs |
 | `RESULTS.md` | the published table and the environment it came from |
+| `run_timing.sh`, `timing.py`, `RESULTS-8B.md` | the supplementary time-to-first-token run on Qwen3-8B-Base |
+| `WRITEUP.md` | the write-up: the bug, the method and what the numbers show |
 
 Public sources only: the vLLM repo (Apache-2.0), public issues and PRs, public weights. Licensed under Apache-2.0, see [LICENSE](../../LICENSE).
