@@ -1,0 +1,17 @@
+vllm 7238ccdf
+== probe_reset_preempt.py kv_consumer fail
+role=kv_consumer policy=fail defer=True | reset: RuntimeError(Failed to reset KV cache even when all t...) r1 after reset=PREEMPTED stale(tokens,drop)=(16, True) | after report: hashed=HHHHHHHH r1=PREEMPTED | r1 resume local hit=112 (correct=48)
+== probe_reset_preempt.py kv_consumer recompute
+role=kv_consumer policy=recompute defer=True | reset: RuntimeError(Failed to reset KV cache even when all t...) r1 after reset=PREEMPTED stale(tokens,drop)=(16, True) | after report: hashed=HHHHHHHH r1=PREEMPTED | r1 resume local hit=112 (correct=48)
+== probe_pressure_preempt.py kv_consumer fail
+AsyncScheduler role=kv_consumer policy=fail defer_block_free=True max_concurrent_batches=2 | free_after_N=0 preempted_in_N+1=False r0_sched_N+1=False | after report: hashed=HHH----- r1_status=FINISHED_ERROR | r1 resume local hit=None (correct=48) r1_final=FINISHED_ERROR
+== probe_pressure_preempt.py kv_producer fail
+AsyncScheduler role=kv_producer policy=fail defer_block_free=False max_concurrent_batches=2 | free_after_N=0 preempted_in_N+1=True r0_sched_N+1=True | after report: hashed=HHHHHHH- r1_status=PREEMPTED | r1 resume local hit=112 (correct=48) r1_final=RUNNING
+== probe_abort_reuse.py kv_consumer fail
+role=kv_consumer policy=fail defer=True | record=yes | C scheduled N+1=False C got bad block=False (C idx -) | after report: C status=WAITING C.num_computed=0 C hashes before= after=
+== probe_abort_reuse.py kv_consumer recompute
+role=kv_consumer policy=recompute defer=True | record=yes | C scheduled N+1=False C got bad block=False (C idx -) | after report: C status=WAITING C.num_computed=0 C hashes before= after=
+== probe_abort_reuse.py kv_producer fail
+role=kv_producer policy=fail defer=False | record=yes | C scheduled N+1=True C got bad block=True (C idx 4) | after report: C status=FINISHED_ERROR C.num_computed=64 C hashes before=HHHHHHHH after=--------
+== probe_abort_reuse.py kv_producer recompute
+role=kv_producer policy=recompute defer=False | record=yes | C scheduled N+1=True C got bad block=True (C idx 4) | after report: C status=RUNNING C.num_computed=64 C hashes before=HHHHHHHH after=-----HHH
