@@ -97,3 +97,11 @@ def _matrix_cells() -> set[str]:
 def test_expected_trials_match_run_matrix():
     assert _matrix_cells() == set(compare.CELL_NAMES)
     assert len(compare.EXPECTED_TRIALS) == len(compare.POLICIES) * len(compare.CELL_NAMES)
+
+
+def test_provenance_errors_flag_a_bypassed_path():
+    good = [{"trial": 0, "abort_via": "queue"}]
+    bad = [{"trial": 0, "abort_via": None}, {"trial": 1, "abort_via": "patch"}]
+    assert compare.provenance_errors("queue", good) == []
+    assert len(compare.provenance_errors("queue", bad)) == 2
+    assert compare.provenance_errors("none", bad) == []

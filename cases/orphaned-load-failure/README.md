@@ -2,7 +2,7 @@
 
 **The bug.** A request's synchronous external KV load fails, and the request is aborted in the same engine step. `EngineCore.step` runs `schedule → execute_model → _process_aborts_queue → update_from_output` (`vllm/v1/engine/core.py:644-668` at `04462732`). So the abort frees the request *before* the load-failure report is processed. `Scheduler._handle_invalid_blocks` scans only `running` and `kv_holding_waiting`, finds nobody, and returns early (`if not total_failed_requests: return set()`) without evicting. The request's blocks were hashed into the prefix cache at schedule time, and freeing keeps the hash. A later identical prompt gets a prefix-cache hit on KV that was never written. This happens under the default `kv_load_failure_policy="fail"` as well as `recompute`, with sync and with async scheduling.
 
-**Results:** [RESULTS.md](RESULTS.md) (table, environment, commits). **Fix:** branch `orphaned-load-failure` at `e23ecfa8`, FIX-BRANCH-URL; it carries the CPU regression tests.
+**Results:** [RESULTS.md](RESULTS.md) (table, environment, commits). **Fix:** the commit measured here is `e23ecfa8` on branch [`orphaned-load-failure-04462732`](https://github.com/ArijitDeb/vllm/tree/orphaned-load-failure-04462732), on the same base as `main`. The PR branch [`orphaned-load-failure`](https://github.com/ArijitDeb/vllm/tree/orphaned-load-failure) carries the same patch rebased onto current upstream main. Both carry the CPU regression tests.
 
 **The name.** The worker's failure report arrives after its owner is gone: an orphaned report, so nothing cleans up after it.
 
@@ -12,7 +12,7 @@ This repo turns the CPU-level finding (scheduler state is wrong) into a token-le
 |---|---|---|
 | `main` | `04462732` | abort rows: r2 hits r1's never-written blocks, r2 ≠ baseline |
 | `pr-53298` | PR [#53298](https://github.com/vllm-project/vllm/pull/53298) at `a7dd070b`, merged onto the same main (branch `olf/pr-53298-on-main`) | same as main (the PR registers repair owners only from `running`, only under `recompute`). The PR's head as of 2026-10-14, `1eca68f4`, sits on a newer main whose kernels differ from this build (221 files under `csrc/`), so it is checked on the CPU regression tests instead: same failure, r2 hits 112 tokens where 48 are valid |
-| `fix` | branch `orphaned-load-failure` at `e23ecfa8`, based on the same main | abort rows: r2 cached = 0, r2 = baseline |
+| `fix` | `e23ecfa8` (branch `orphaned-load-failure-04462732`), based on the same main | abort rows: r2 cached = 0, r2 = baseline |
 
 ## How the abort lands in the window, deterministically
 
@@ -56,6 +56,7 @@ Setup, once: a vLLM clone at `$VLLM_CLONE` (default `~/Projects/vllm`) installed
 cd "$VLLM_CLONE"
 git branch main-04462732 04462732a40a8329ad60593d754b576c54c5fe5d
 git fetch origin pull/53298/head && git branch pr-53298 a7dd070bace3178117e9ec13bb7f70403cddc15f
+git fetch https://github.com/ArijitDeb/vllm orphaned-load-failure-04462732:orphaned-load-failure-04462732
 ```
 
 Then, from this directory (`cases/orphaned-load-failure/`):
@@ -63,7 +64,7 @@ Then, from this directory (`cases/orphaned-load-failure/`):
 ```bash
 ./setup_trees.sh main
 ./setup_trees.sh pr
-./setup_trees.sh fix <fix-branch>      # a branch based on main-04462732
+./setup_trees.sh fix orphaned-load-failure-04462732
 
 # the GPU must be free: nothing else may hold more than 4 GB
 PY=$VLLM_CLONE/.venv/bin/python ./run_matrix.sh main

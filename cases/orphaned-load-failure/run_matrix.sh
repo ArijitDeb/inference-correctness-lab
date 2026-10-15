@@ -32,7 +32,11 @@ CELL_TIMEOUT=${CELL_TIMEOUT:-1800}
 # at the device the run will use.
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 export CUDA_VISIBLE_DEVICES=0
-used=$(nvidia-smi --id=0 --query-gpu=memory.used --format=csv,noheader,nounits)
+used=$(nvidia-smi --id=0 --query-gpu=memory.used --format=csv,noheader,nounits || true)
+if ! [[ "$used" =~ ^[0-9]+$ ]]; then
+  echo "could not read GPU 0 memory from nvidia-smi (got '$used')" >&2
+  exit 1
+fi
 if [ "$used" -gt "$MAX_USED_MIB" ]; then
   echo "GPU 0 has ${used} MiB in use (limit ${MAX_USED_MIB}). Free the GPU first." >&2
   exit 1
@@ -63,7 +67,7 @@ run() {
   echo ">> harness.py $*"
   local rc=0 cell_log
   cell_log=$(mktemp)
-  timeout "$CELL_TIMEOUT" "$PY" "$HERE/harness.py" "$@" --results "$OUT" > "$cell_log" 2>&1 || rc=$?
+  timeout -k 30 "$CELL_TIMEOUT" "$PY" "$HERE/harness.py" "$@" --results "$OUT" > "$cell_log" 2>&1 || rc=$?
   cat "$cell_log" >> "$OUT/run.log"
   if [ "$rc" -ne 0 ]; then
     echo "!! exit $rc: harness.py $*" >&2

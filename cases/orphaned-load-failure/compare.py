@@ -46,7 +46,10 @@ overhead dominates, so the cache hit shows no measurable speedup here.
 
 A tree directory missing its baseline or any of the expected trial files is
 named at the top of the table and on stderr, and the exit code is 1, so a
-partial matrix can't pass for a complete one.
+partial matrix can't pass for a complete one. The same holds for a row whose
+abort was not applied by the path it claims (``abort via`` must equal the
+``--abort`` mode for queue and patch rows): such a row proves nothing about
+that path.
 """
 
 import json
@@ -161,6 +164,17 @@ def fmt_set(values: list) -> str:
     return "/".join("-" if v is None else str(v) for v in sorted(set(values), key=_set_order))
 
 
+def provenance_errors(abort: str, trials: list[dict]) -> list[str]:
+    """Trials whose abort was not applied by the path the row claims."""
+    if abort not in ("queue", "patch"):
+        return []
+    return [
+        f"trial {t.get('trial', i)}: abort via {t.get('abort_via')!r}, expected {abort!r}"
+        for i, t in enumerate(trials)
+        if t.get("abort_via") != abort
+    ]
+
+
 def missing_files(tree_dir: Path) -> list[str]:
     expected = ["baseline.json", *EXPECTED_TRIALS]
     return [name for name in expected if not (tree_dir / name).exists()]
@@ -175,7 +189,7 @@ def cell_sort_key(path: Path) -> tuple[int, int]:
     )
 
 
-def rows_for_tree(tree_dir: Path) -> list[dict]:
+def rows_for_tree(tree_dir: Path, problems: list[str] | None = None) -> list[dict]:
     base_path = tree_dir / "baseline.json"
     if not base_path.exists():
         return []
@@ -189,6 +203,11 @@ def rows_for_tree(tree_dir: Path) -> list[dict]:
         if not trials:
             print(f"WARNING {tree_dir.name}/{path.name}: no trials", file=sys.stderr)
             continue
+        if problems is not None:
+            problems.extend(
+                f"PROVENANCE {tree_dir.name}/{path.name}: {err}"
+                for err in provenance_errors(a["abort"], trials)
+            )
         n = len(trials)
         canary_word = result.get("canary_word", DEFAULT_CANARY_WORD).lower()
         r2_ids = [t["r2"].get("token_ids", []) for t in trials]
@@ -257,7 +276,7 @@ def main() -> None:
         missing = missing_files(tree_dir)
         if missing:
             incomplete.append(f"INCOMPLETE {tree_dir.name}: missing {', '.join(missing)}")
-        tree_rows = rows_for_tree(tree_dir)
+        tree_rows = rows_for_tree(tree_dir, incomplete)
         if tree_rows:
             rows.extend(tree_rows)
             base = json.loads((tree_dir / "baseline.json").read_text())["result"]["baseline"]

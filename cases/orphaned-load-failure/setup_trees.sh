@@ -79,7 +79,12 @@ case ${1:-} in
     fi
     ;;
   *)
-    sed -n '4,12p' "$0"; exit 2
+    cat >&2 <<'USAGE'
+usage: ./setup_trees.sh main            # trees/main at $BASE_REF
+       ./setup_trees.sh pr              # trees/pr-53298: PR #53298 merged onto $BASE_REF
+       ./setup_trees.sh fix <branch>    # trees/fix on the fix branch
+USAGE
+    exit 2
     ;;
 esac
 
