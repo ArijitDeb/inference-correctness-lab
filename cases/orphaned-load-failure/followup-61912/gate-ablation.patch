@@ -1,0 +1,16 @@
+diff --git a/vllm/v1/core/sched/scheduler.py b/vllm/v1/core/sched/scheduler.py
+index 15177a2e32..a04f13c832 100644
+--- a/vllm/v1/core/sched/scheduler.py
++++ b/vllm/v1/core/sched/scheduler.py
+@@ -940,11 +940,6 @@ class Scheduler(SchedulerInterface):
+                     skip_request(request_queue)
+                     continue
+ 
+-                if request_id in self._finished_inflight_kv:
+-                    # A preempted load may still fail, even in drop-output mode.
+-                    # Drain it before allocating a new generation of blocks.
+-                    skip_request(request_queue)
+-                    continue
+ 
+                 if request.num_stale_output_tokens and not request.drop_stale_output:
+                     # Deliverable stale output still in flight: resuming now

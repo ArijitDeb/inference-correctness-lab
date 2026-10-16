@@ -1,0 +1,44 @@
+vllm 89a93299
+== probe_reset_order.py fail 0
+policy=fail repair=0 failed=True | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHH----- r1=FINISHED_ERROR | token 998 delivered=False r1_final=FINISHED_ERROR r1_out=[] | identical r2 start=None | longer r3 start=48 r3 gets r1's block 7=False
+policy=fail repair=0 failed=False | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHHHHHHH r1=PREEMPTED | token 998 delivered=False r1_final=FINISHED_LENGTH_CAPPED r1_out=[5, 5] | identical r2 start=None | longer r3 start=128 r3 gets r1's block 7=True
+== probe_reset_order.py fail 1
+policy=fail repair=1 failed=True | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHH----- r1=FINISHED_ERROR | token 998 delivered=False r1_final=FINISHED_ERROR r1_out=[] | identical r2 start=48 | longer r3 start=128 r3 gets r1's block 7=False
+policy=fail repair=1 failed=False | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHHHHHHH r1=PREEMPTED | token 998 delivered=False r1_final=FINISHED_LENGTH_CAPPED r1_out=[5, 5] | identical r2 start=112 | longer r3 start=128 r3 gets r1's block 7=True
+== probe_reset_order.py recompute 0
+policy=recompute repair=0 failed=True | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHH----- r1=PREEMPTED | token 998 delivered=False r1_final=FINISHED_LENGTH_CAPPED r1_out=[5, 5] | identical r2 start=None | longer r3 start=128 r3 gets r1's block 7=False
+policy=recompute repair=0 failed=False | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHHHHHHH r1=PREEMPTED | token 998 delivered=False r1_final=FINISHED_LENGTH_CAPPED r1_out=[5, 5] | identical r2 start=None | longer r3 start=128 r3 gets r1's block 7=True
+== probe_reset_order.py recompute 1
+policy=recompute repair=1 failed=True | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHH----- r1=PREEMPTED | token 998 delivered=False r1_final=FINISHED_LENGTH_CAPPED r1_out=[5, 5] | identical r2 start=112 | longer r3 start=128 r3 gets r1's block 7=False
+policy=recompute repair=1 failed=False | reset=raised r1=PREEMPTED | N+1: r1 scheduled=False start=None | after report N: hashed(b1)=HHHHHHHH r1=PREEMPTED | token 998 delivered=False r1_final=FINISHED_LENGTH_CAPPED r1_out=[5, 5] | identical r2 start=112 | longer r3 start=128 r3 gets r1's block 7=True
+== probe_gate_scope.py fail 1
+async-deliver-pressure policy=fail failed=True | preempted_at=1 readmitted(step,start)=None r1=FINISHED_ERROR requires_kv_delivery=False r1_steps=0:16 1:- 2:- 3:- 4:- 5:- 6:- 7:-
+async-drop-pressure    policy=fail failed=True | preempted_at=1 readmitted(step,start)=None r1=FINISHED_ERROR requires_kv_delivery=True r1_steps=0:16 1:- 2:- 3:- 4:- 5:- 6:- 7:-
+async-reset-producer   policy=fail failed=True | preempted_at=0 readmitted(step,start)=None r1=FINISHED_ERROR requires_kv_delivery=True r1_steps=0:16 1:- 2:- 3:- 4:- 5:- 6:- 7:-
+async-reset-consumer   policy=fail failed=True | preempted_at=0 readmitted(step,start)=None r1=FINISHED_ERROR requires_kv_delivery=False r1_steps=0:16 1:- 2:- 3:- 4:- 5:- 6:- 7:-
+pp3-deliver-pressure   policy=fail failed=True | preempted_at=2 readmitted(step,start)=None r1=FINISHED_ERROR requires_kv_delivery=False r1_steps=0:16 1:16 2:- 3:- 4:- 5:- 6:- 7:-
+pp3-drop-pressure      policy=fail failed=True | preempted_at=2 readmitted(step,start)=None r1=FINISHED_ERROR requires_kv_delivery=True r1_steps=0:16 1:16 2:- 3:- 4:- 5:- 6:- 7:-
+== probe_gate_scope.py fail 0
+async-deliver-pressure policy=fail failed=False | preempted_at=1 readmitted(step,start)=(3, 112) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:- 2:- 3:17 4:1 5:1 6:1 7:1
+async-drop-pressure    policy=fail failed=False | preempted_at=1 readmitted(step,start)=(2, 112) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:- 2:16 3:1 4:1 5:1 6:1 7:1
+async-reset-producer   policy=fail failed=False | preempted_at=0 readmitted(step,start)=(2, 0) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:- 2:128 3:- 4:16 5:1 6:1 7:1
+async-reset-consumer   policy=fail failed=False | preempted_at=0 readmitted(step,start)=(2, 96) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:- 2:32 3:- 4:- 5:- 6:1 7:1
+pp3-deliver-pressure   policy=fail failed=False | preempted_at=2 readmitted(step,start)=(6, 48) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:16 2:- 3:- 4:- 5:- 6:34 7:-
+pp3-drop-pressure      policy=fail failed=False | preempted_at=2 readmitted(step,start)=(4, 48) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:16 2:- 3:- 4:16 5:16 6:- 7:1
+== probe_gate_scope.py recompute 1
+async-deliver-pressure policy=recompute failed=True | preempted_at=1 readmitted(step,start)=(2, 48) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:- 2:80 3:1 4:1 5:1 6:1 7:1
+async-drop-pressure    policy=recompute failed=True | preempted_at=1 readmitted(step,start)=(2, 48) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:- 2:80 3:1 4:1 5:1 6:1 7:1
+async-reset-producer   policy=recompute failed=True | preempted_at=0 readmitted(step,start)=(2, 0) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:- 2:128 3:- 4:16 5:1 6:1 7:1
+async-reset-consumer   policy=recompute failed=True | preempted_at=0 readmitted(step,start)=(2, 48) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:- 2:80 3:- 4:- 5:- 6:1 7:1
+pp3-deliver-pressure   policy=recompute failed=True | preempted_at=2 readmitted(step,start)=(4, 16) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:16 2:- 3:- 4:16 5:16 6:32 7:1
+pp3-drop-pressure      policy=recompute failed=True | preempted_at=2 readmitted(step,start)=(4, 16) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:16 2:- 3:- 4:16 5:16 6:32 7:1
+== probe_gate_scope.py recompute 0
+async-deliver-pressure policy=recompute failed=False | preempted_at=1 readmitted(step,start)=(3, 112) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:- 2:- 3:17 4:1 5:1 6:1 7:1
+async-drop-pressure    policy=recompute failed=False | preempted_at=1 readmitted(step,start)=(2, 112) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:- 2:16 3:1 4:1 5:1 6:1 7:1
+async-reset-producer   policy=recompute failed=False | preempted_at=0 readmitted(step,start)=(2, 0) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:- 2:128 3:- 4:16 5:1 6:1 7:1
+async-reset-consumer   policy=recompute failed=False | preempted_at=0 readmitted(step,start)=(2, 96) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:- 2:32 3:- 4:- 5:- 6:1 7:1
+pp3-deliver-pressure   policy=recompute failed=False | preempted_at=2 readmitted(step,start)=(6, 48) r1=RUNNING requires_kv_delivery=False r1_steps=0:16 1:16 2:- 3:- 4:- 5:- 6:34 7:-
+pp3-drop-pressure      policy=recompute failed=False | preempted_at=2 readmitted(step,start)=(4, 48) r1=RUNNING requires_kv_delivery=True r1_steps=0:16 1:16 2:- 3:- 4:16 5:16 6:- 7:1
+== probe_rewound_preempt.py
+recompute kv_consumer failed=True | after report N: r1=RUNNING computed=48 hashed(b1)=HHHHHHHH | preempted_at=N+2 resumed(step,start)=('N+3', 112) (correct start after failure: 48)
+recompute kv_consumer failed=False | after report N: r1=RUNNING computed=128 hashed(b1)=HHHHHHHH | preempted_at=N+2 resumed(step,start)=('N+3', 112) (correct start after failure: 48)
